@@ -6,31 +6,18 @@ import schedule
 import time
 import threading
 from db import   favori_urun_ekle_db, favorileri_goster_db, favori_sil_db, tum_favori_urunleri_getir
-from scrapper import trendyol_fiyat_cek, fiyat_kontrolu
+from scrapper import fiyat_cek, fiyat_kontrolu
+import logging
 
-def trendyol_fiyat_cek(urun_link):
-    urun_id = urun_link.split('/')[-1]
-    url = f"https://www.trendyol.com/urun/{urun_id}"
-    response = requests.get(url)
-    
-    if response.status_code != 200:
-        print("HTTP isteği başarısız oldu.")
-        return None, urun_id
-    
-    soup = BeautifulSoup(response.content, 'html.parser')
-    
-    fiyat_element = soup.find("span", {"class": "prc-dsc"})
-    if fiyat_element is None:
-        print("Fiyat elemanı bulunamadı. HTML yapısını kontrol edin.")
-        return None, urun_id
-    
-    fiyat = fiyat_element.text.strip()
-    fiyat = float(fiyat.replace(' TL', '').replace('.', '').replace(',', '.'))
-    
-    return fiyat, urun_id
+# Logging ayarları
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 def fiyat_kontrolu(urun_link):
-    yeni_fiyat, urun_id = trendyol_fiyat_cek(urun_link)  
+    yeni_fiyat, urun_id = fiyat_cek(urun_link)  
     
     if yeni_fiyat is None:
         return None, urun_id
@@ -86,28 +73,43 @@ def help_command(update: Update, context: CallbackContext):
 
 def favori_ekle(update: Update, context: CallbackContext):
     """Favori ürünü ekle ve fiyat güncelleme işini başlat"""
-    kullanici_id = update.message.chat.id
-    if len(context.args) < 1:
-        update.message.reply_text("Lütfen ürün linkini belirtin.")
-        return
+    try:
+        if not update or not update.message:
+            logger.error("Update veya message objesi bulunamadı")
+            return
 
-    urun_link = context.args[0]  
-    
-    # Fiyat kontrolü ve alma işlemi
-    yeni_fiyat, urun_id = fiyat_kontrolu(urun_link)
-    
-    if yeni_fiyat is None:
-        update.message.reply_text("Fiyat bilgisi alınamadı. Lütfen ürün linkini kontrol edin.")
-        return
-    
-    # Favori ürünü veritabanına ekleyin
-    favori_urun_ekle_db(kullanici_id, urun_id, urun_link, yeni_fiyat)
-    
-    update.message.reply_text(
-        f"✅ **Favori Ürün Eklendi**:\n"
-        f"🔗 **Ürün Linki**: ({urun_link})\n"
-        f"💰 **Mevcut Fiyat**: {yeni_fiyat} TL."
-    )
+        kullanici_id = update.message.chat.id
+        if len(context.args) < 1:
+            update.message.reply_text("Lütfen ürün linkini belirtin.")
+            return
+
+        urun_link = context.args[0]
+        
+        # Desteklenen site kontrolü
+        if "trendyol.com" not in urun_link and "hepsiburada.com" not in urun_link:
+            update.message.reply_text("❌ Sadece Trendyol ve Hepsiburada linkleri desteklenmektedir.")
+            return
+        
+        # Fiyat kontrolü ve alma işlemi
+        yeni_fiyat, urun_id = fiyat_cek(urun_link)
+        
+        if yeni_fiyat is None:
+            update.message.reply_text("Fiyat bilgisi alınamadı. Lütfen ürün linkini kontrol edin.")
+            return
+        
+        # Favori ürünü veritabanına ekleyin
+        favori_urun_ekle_db(kullanici_id, urun_id, urun_link, yeni_fiyat)
+        
+        site_adi = "Trendyol" if "trendyol.com" in urun_link else "Hepsiburada"
+        update.message.reply_text(
+            f"✅ **{site_adi} Ürünü Eklendi**:\n"
+            f"🔗 **Ürün Linki**: ({urun_link})\n"
+            f"💰 **Mevcut Fiyat**: {yeni_fiyat} TL"
+        )
+    except Exception as e:
+        logger.error(f"Favori ekleme hatası: {str(e)}")
+        if update and update.message:
+            update.message.reply_text("Bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
 
 def favoriler(update: Update, context: CallbackContext):
     """Favori ürünleri göster"""
