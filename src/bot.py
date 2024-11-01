@@ -6,7 +6,7 @@ import schedule
 import time
 import threading
 from db import   favori_urun_ekle_db, favorileri_goster_db, favori_sil_db, tum_favori_urunleri_getir
-from scrapper import fiyat_cek, fiyat_kontrolu
+from scrapper import PriceScraper, fiyat_cek
 import logging
 
 # Logging ayarları
@@ -86,8 +86,12 @@ def favori_ekle(update: Update, context: CallbackContext):
         urun_link = context.args[0]
         
         # Desteklenen site kontrolü
-        if "trendyol.com" not in urun_link and "hepsiburada.com" not in urun_link:
-            update.message.reply_text("❌ Sadece Trendyol ve Hepsiburada linkleri desteklenmektedir.")
+        scraper = PriceScraper()
+        if not scraper.factory.get_scraper(urun_link):
+            supported_sites = ", ".join(scraper.get_supported_sites())
+            update.message.reply_text(
+                f"❌ Bu site desteklenmiyor.\nDesteklenen siteler: {supported_sites}"
+            )
             return
         
         # Fiyat kontrolü ve alma işlemi
