@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from typing import Optional, Tuple
 import logging
+from config import SELENIUM_CONFIG, SITE_TIMEOUTS
 
 class TrendyolScraper(BaseScraper):
     def can_handle(self, url: str) -> bool:
@@ -14,11 +15,11 @@ class TrendyolScraper(BaseScraper):
     def extract_price(self, url: str) -> Tuple[Optional[float], str]:
         session = self._create_session()
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': SELENIUM_CONFIG['user_agent']
         }
         
         try:
-            response = session.get(url, headers=headers)
+            response = session.get(url, headers=headers, timeout=self._get_timeout(url))
             soup = BeautifulSoup(response.content, 'html.parser')
             
             price_element = soup.find('span', {'class': 'prc-dsc'})
@@ -38,3 +39,6 @@ class TrendyolScraper(BaseScraper):
 
     def _create_session(self):
         return requests.Session()
+
+    def _get_timeout(self, url: str) -> int:
+        return SITE_TIMEOUTS.get(url, 10)

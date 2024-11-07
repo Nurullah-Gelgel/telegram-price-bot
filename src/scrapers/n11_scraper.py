@@ -1,13 +1,14 @@
 from scrapers.base_scraper import BaseScraper
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from typing import Optional, Tuple
 import logging
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+from config import SITE_TIMEOUTS, SELENIUM_CONFIG
 
 class N11Scraper(BaseScraper):
     def can_handle(self, url: str) -> bool:
@@ -22,7 +23,7 @@ class N11Scraper(BaseScraper):
             driver = self._get_chrome_driver()
             driver.get(url)
             
-            wait = WebDriverWait(driver, 10)
+            wait = WebDriverWait(driver, self._get_timeout(url))
             
             # Birden fazla fiyat seçiciyi dene
             selectors = [

@@ -1,13 +1,14 @@
 from scrapers.base_scraper import BaseScraper
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from typing import Optional, Tuple
 import logging
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+from config import SITE_TIMEOUTS, SELENIUM_CONFIG
 
 class WatsonsScraper(BaseScraper):
     def can_handle(self, url: str) -> bool:
@@ -22,7 +23,7 @@ class WatsonsScraper(BaseScraper):
             driver = self._get_chrome_driver()
             driver.get(url)
             
-            wait = WebDriverWait(driver, 15)
+            wait = WebDriverWait(driver, self._get_timeout(url))
             
             try:
                 # Ana fiyat alanını bul
@@ -139,3 +140,10 @@ class WatsonsScraper(BaseScraper):
         
         service = Service(ChromeDriverManager().install())
         return webdriver.Chrome(service=service, options=chrome_options)
+
+    def _get_timeout(self, url: str) -> int:
+        """Site bazlı timeout değerini döndür"""
+        for domain, timeout in SITE_TIMEOUTS.items():
+            if domain in url:
+                return timeout
+        return SITE_TIMEOUTS['default']

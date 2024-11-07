@@ -1,9 +1,10 @@
 # requirements.txt
 python-telegram-bot==13.7
-requests==2.25.1
+requests==2.31.0
 beautifulsoup4==4.9.3
 schedule==1.1.0
 tornado>=6.2.0
+urllib3==1.26.6
 chardet==4.0.0
 
 # Selenium ve ilgili paketler

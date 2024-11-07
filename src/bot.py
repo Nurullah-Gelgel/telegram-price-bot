@@ -7,13 +7,16 @@ import time
 import threading
 from db import   favori_urun_ekle_db, favorileri_goster_db, favori_sil_db, tum_favori_urunleri_getir
 from scrapper import PriceScraper, fiyat_cek
+from config import (
+    TELEGRAM_API_TOKEN, 
+    PRICE_CHECK_INTERVAL,
+    LOGGING_CONFIG,
+    TELEGRAM_GROUP_ID
+)
 import logging
 
-# Logging ayarları
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+# Logging ayarlarını güncelle
+logging.basicConfig(**LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
 def fiyat_kontrolu(urun_link):
@@ -34,24 +37,49 @@ def fiyat_guncelle(context: CallbackContext):
         yeni_fiyat, _ = fiyat_kontrolu(urun_link)
         
         if yeni_fiyat is not None and yeni_fiyat != mevcut_fiyat:
-            # Fiyat değişikliği var, bildirim gönder
-            fiyat_degisimi = yeni_fiyat - mevcut_fiyat
-            emoji = "📉" if fiyat_degisimi < 0 else "📈"
-            mesaj = (
-                f"🔔 **Fiyat Değişikliği Bildirimi**:\n"
-                f"🔗 **Ürün Linki**: {urun_link}\n"
-                f"💰 **Eski Fiyat**: {mevcut_fiyat:.2f} TL\n"
-                f"{emoji} **Yeni Fiyat**: {yeni_fiyat:.2f} TL\n"
-                f"🔄 **Fark**: {abs(fiyat_degisimi):.2f} TL ({emoji})"
-            )
-            context.bot.send_message(chat_id=kullanici_id, text=mesaj, parse_mode='Markdown')
+            # Sadece fiyat düştüğünde bildirim gönder
+            if yeni_fiyat < mevcut_fiyat:
+                fiyat_degisimi = mevcut_fiyat - yeni_fiyat
+                indirim_yuzdesi = (fiyat_degisimi/mevcut_fiyat)*100
+                
+                # Kullanıcıya özel mesaj
+                kullanici_mesaji = (
+                    f"🔔 **Fiyat Düşüşü Bildirimi**\n"
+                    f"🔗 **Ürün Linki**: {urun_link}\n"
+                    f"💰 **Eski Fiyat**: {mevcut_fiyat:.2f} TL\n"
+                    f"📉 **Yeni Fiyat**: {yeni_fiyat:.2f} TL\n"
+                    f"💫 **İndirim**: {fiyat_degisimi:.2f} TL (%{indirim_yuzdesi:.1f})"
+                )
+                
+                # Gruba gönderilecek mesaj
+                grup_mesaji = (
+                    f"🔔 **Yeni Fiyat Düşüşü!**\n"
+                    f"🔗 **Ürün Linki**: {urun_link}\n"
+                    f"💰 **Eski Fiyat**: {mevcut_fiyat:.2f} TL\n"
+                    f"📉 **Yeni Fiyat**: {yeni_fiyat:.2f} TL\n"
+                    f"💫 **İndirim**: {fiyat_degisimi:.2f} TL (%{indirim_yuzdesi:.1f})"
+                )
+                
+                try:
+                    # Kullanıcıya bildirim gönder
+                    context.bot.send_message(
+                        chat_id=kullanici_id,
+                        text=kullanici_mesaji,
+                        parse_mode='Markdown'
+                    )
+                    
+                    # Gruba bildirim gönder
+                    context.bot.send_message(
+                        chat_id=TELEGRAM_GROUP_ID,
+                        text=grup_mesaji,
+                        parse_mode='Markdown'
+                    )
+                    logger.info(f"Fiyat düşüşü bildirimi gönderildi - Kullanıcı: {kullanici_id}, Ürün: {urun_link}")
+                except Exception as e:
+                    logger.error(f"Bildirim gönderme hatası: {str(e)}")
             
             # Fiyatı veritabanında güncelle
             favori_fiyat_guncelle_db(kullanici_id, urun_id, yeni_fiyat)
-            # Fiyatı veritabanında güncelle
-            # favori_fiyat_guncelle_db(kullanici_id, urun_id, yeni_fiyat)  # Bu fonksiyonu implement etmeniz gerekebilir
-
-API_TOKEN = '7723288845:AAG8VEessGMqrV2H78Wlzibtm9y3PV2ET2Y'
 
 def start(update: Update, context: CallbackContext):
     """Botun başlangıç mesajı"""
@@ -162,9 +190,15 @@ def fiyat_guncelle_thread():
         schedule.run_pending()
         time.sleep(1)
 
+def test_group(update: Update, context: CallbackContext):
+    """Test mesajı gönder ve chat ID'yi logla"""
+    chat_id = update.message.chat_id
+    logger.info(f"Current chat ID: {chat_id}")
+    update.message.reply_text(f"Bu sohbetin ID'si: {chat_id}")
+
 def main():
     """Botun ana fonksiyonu"""
-    updater = Updater(API_TOKEN, use_context=True)
+    updater = Updater(TELEGRAM_API_TOKEN, use_context=True)
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler("start", start))
@@ -173,9 +207,10 @@ def main():
     dp.add_handler(CommandHandler("favoriler", favoriler))
     dp.add_handler(CommandHandler("tum_favoriler", tum_favori_urunler))
     dp.add_handler(CommandHandler("favori_sil", favori_sil))
+    dp.add_handler(CommandHandler("test_group", test_group))
 
-    # Fiyat güncellemelerini saatlik olarak ayarla
-    updater.job_queue.run_repeating(fiyat_guncelle, interval=3600, first=0)
+    # Fiyat güncellemelerini config'den al
+    updater.job_queue.run_repeating(fiyat_guncelle, interval=PRICE_CHECK_INTERVAL, first=0)
 
     # Fiyat güncellemelerini kontrol eden thread başlat
     threading.Thread(target=fiyat_guncelle_thread, daemon=True).start()

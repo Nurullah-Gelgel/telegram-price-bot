@@ -1,8 +1,9 @@
 import sqlite3
+from config import DB_PATH
 
 def create_connection():
     """Veritabanı bağlantısı oluştur"""
-    conn = sqlite3.connect('favoriler.db')
+    conn = sqlite3.connect(DB_PATH)
     return conn
 
 def create_table():
