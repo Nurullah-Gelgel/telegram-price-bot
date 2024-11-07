@@ -3,6 +3,9 @@ from scrapers.base_scraper import BaseScraper
 from scrapers.trendyol_scraper import TrendyolScraper
 from scrapers.hepsiburada_scraper import HepsiburadaScraper
 from scrapers.n11_scraper import N11Scraper
+from scrapers.gratis_scraper import GratisScraper
+from scrapers.rossmann_scraper import RossmannScraper
+from scrapers.watsons_scraper import WatsonsScraper
 
 class ScraperFactory:
     def __init__(self):
@@ -10,6 +13,9 @@ class ScraperFactory:
             TrendyolScraper(),
             HepsiburadaScraper(),
             N11Scraper(),
+            GratisScraper(),
+            RossmannScraper(),
+            WatsonsScraper(),
             # Yeni scraperlar buraya eklenebilir
         ]
 
