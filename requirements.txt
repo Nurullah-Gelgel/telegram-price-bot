@@ -5,3 +5,16 @@ beautifulsoup4==4.9.3
 schedule==1.1.0
 tornado>=6.2.0  # Tornado sürümünü güncelledik
 chardet==4.0.0  # Chardet modülünü ekledik
+
+# Selenium ve ilgili paketler
+selenium==4.15.2
+webdriver-manager==4.0.1
+
+# Veritabanı
+sqlite3
+
+# Loglama ve hata ayıklama
+logging
+
+# Opsiyonel: HTML parsing için
+lxml==4.9.3
