@@ -29,18 +29,20 @@ class BaseScraper(ABC):
             for option in SELENIUM_CONFIG['chrome_options']:
                 chrome_options.add_argument(option)
                 
-            # User agent'ı config'den al
-            chrome_options.add_argument(f'--user-agent={SELENIUM_CONFIG["user_agent"]}')
-            
             # Add these additional options for Linux servers
             chrome_options.add_argument('--disable-dev-shm-usage')
             chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--remote-debugging-port=9222')
             chrome_options.binary_location = '/usr/bin/google-chrome-stable'
             
-            service = Service(ChromeDriverManager().install())
+            # Use system's ChromeDriver
+            service = Service('/usr/local/bin/chromedriver')
+            
             return webdriver.Chrome(service=service, options=chrome_options)
         except Exception as e:
             logging.error(f"Chrome driver initialization error: {str(e)}")
+            logging.error(f"Error details: {str(e.__class__.__name__)}")
             raise
 
     def _get_timeout(self, url: str) -> int:
