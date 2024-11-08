@@ -9,7 +9,6 @@ chardet==4.0.0
 
 # Selenium ve ilgili paketler
 selenium==4.15.2
-webdriver-manager==4.0.1
 
 # HTML parsing için
 lxml==4.9.3

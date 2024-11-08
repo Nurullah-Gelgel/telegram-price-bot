@@ -3,7 +3,6 @@ from typing import Optional, Tuple
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 from config import SELENIUM_CONFIG, SITE_TIMEOUTS
 import logging
 
@@ -26,15 +25,18 @@ class BaseScraper(ABC):
             chrome_options = Options()
             
             # Add required options
-            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--headless=new')
             chrome_options.add_argument('--no-sandbox')
             chrome_options.add_argument('--disable-dev-shm-usage')
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--window-size=1920,1080')
             chrome_options.add_argument('--remote-debugging-port=9222')
             chrome_options.add_argument('--disable-extensions')
-            chrome_options.add_argument('--disable-setuid-sandbox')
-            chrome_options.add_argument('--disable-web-security')
+            
+            # Additional options for stability
+            chrome_options.add_argument('--disable-software-rasterizer')
+            chrome_options.add_argument('--disable-features=NetworkService')
+            chrome_options.add_argument('--force-device-scale-factor=1')
             
             # Set binary location
             chrome_options.binary_location = '/usr/bin/google-chrome-stable'
@@ -46,8 +48,7 @@ class BaseScraper(ABC):
             service = Service(executable_path='/usr/local/bin/chromedriver')
             
             # Initialize and return the driver
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-            return driver
+            return webdriver.Chrome(service=service, options=chrome_options)
             
         except Exception as e:
             logging.error(f"Chrome driver initialization error: {str(e)}")
