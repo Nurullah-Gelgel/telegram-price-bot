@@ -21,6 +21,10 @@ class HepsiburadaScraper(BaseScraper):
         driver = None
         try:
             driver = self._get_chrome_driver()
+            if not driver:
+                logging.error("Failed to initialize Chrome driver")
+                return None, url
+            
             driver.get(url)
             
             wait = WebDriverWait(driver, self._get_timeout(url))
@@ -55,10 +59,13 @@ class HepsiburadaScraper(BaseScraper):
                 
         except Exception as e:
             logging.error(f"Hepsiburada price extraction error for URL {url}: {str(e)}")
-            return None, url
+            return None, url.split('/')[-1] if '/' in url else url  # Fallback product ID
         finally:
             if driver:
-                driver.quit()
+                try:
+                    driver.quit()
+                except:
+                    pass
 
     def _get_chrome_driver(self):
         chrome_options = Options()

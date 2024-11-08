@@ -22,17 +22,26 @@ class BaseScraper(ABC):
 
     def _get_chrome_driver(self):
         """Ortak Chrome driver konfigürasyonu"""
-        chrome_options = Options()
-        
-        # Chrome options'ları config'den al
-        for option in SELENIUM_CONFIG['chrome_options']:
-            chrome_options.add_argument(option)
+        try:
+            chrome_options = Options()
             
-        # User agent'ı config'den al
-        chrome_options.add_argument(f'--user-agent={SELENIUM_CONFIG["user_agent"]}')
-        
-        service = Service(ChromeDriverManager().install())
-        return webdriver.Chrome(service=service, options=chrome_options)
+            # Chrome options'ları config'den al
+            for option in SELENIUM_CONFIG['chrome_options']:
+                chrome_options.add_argument(option)
+                
+            # User agent'ı config'den al
+            chrome_options.add_argument(f'--user-agent={SELENIUM_CONFIG["user_agent"]}')
+            
+            # Add these additional options for Linux servers
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.binary_location = '/usr/bin/google-chrome-stable'
+            
+            service = Service(ChromeDriverManager().install())
+            return webdriver.Chrome(service=service, options=chrome_options)
+        except Exception as e:
+            logging.error(f"Chrome driver initialization error: {str(e)}")
+            raise
 
     def _get_timeout(self, url: str) -> int:
         """Site bazlı timeout değerini döndür"""
