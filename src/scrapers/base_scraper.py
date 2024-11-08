@@ -25,21 +25,30 @@ class BaseScraper(ABC):
         try:
             chrome_options = Options()
             
-            # Chrome options'ları config'den al
-            for option in SELENIUM_CONFIG['chrome_options']:
-                chrome_options.add_argument(option)
-                
-            # Add these additional options for Linux servers
-            chrome_options.add_argument('--disable-dev-shm-usage')
+            # Add required options
+            chrome_options.add_argument('--headless')
             chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
             chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--window-size=1920,1080')
             chrome_options.add_argument('--remote-debugging-port=9222')
+            chrome_options.add_argument('--disable-extensions')
+            chrome_options.add_argument('--disable-setuid-sandbox')
+            chrome_options.add_argument('--disable-web-security')
+            
+            # Set binary location
             chrome_options.binary_location = '/usr/bin/google-chrome-stable'
             
-            # Use system's ChromeDriver
-            service = Service('/usr/local/bin/chromedriver')
+            # Add user agent
+            chrome_options.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
             
-            return webdriver.Chrome(service=service, options=chrome_options)
+            # Create service with specific executable path
+            service = Service(executable_path='/usr/local/bin/chromedriver')
+            
+            # Initialize and return the driver
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            return driver
+            
         except Exception as e:
             logging.error(f"Chrome driver initialization error: {str(e)}")
             logging.error(f"Error details: {str(e.__class__.__name__)}")
