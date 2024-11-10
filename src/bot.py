@@ -115,7 +115,8 @@ def favori_ekle(update: Update, context: CallbackContext):
         
         # Desteklenen site kontrolü
         scraper = PriceScraper()
-        if not scraper.factory.get_scraper(urun_link):
+        scraper_instance = scraper.factory.get_scraper(urun_link)
+        if not scraper_instance:
             supported_sites = ", ".join(scraper.get_supported_sites())
             update.message.reply_text(
                 f"❌ Bu site desteklenmiyor.\nDesteklenen siteler: {supported_sites}"
@@ -132,7 +133,8 @@ def favori_ekle(update: Update, context: CallbackContext):
         # Favori ürünü veritabanına ekleyin
         favori_urun_ekle_db(kullanici_id, urun_id, urun_link, yeni_fiyat)
         
-        site_adi = "Trendyol" if "trendyol.com" in urun_link else "Hepsiburada"
+        # Site adını scraper'dan al
+        site_adi = scraper_instance.get_site_name()
         update.message.reply_text(
             f"✅ **{site_adi} Ürünü Eklendi**:\n"
             f"🔗 **Ürün Linki**: ({urun_link})\n"
