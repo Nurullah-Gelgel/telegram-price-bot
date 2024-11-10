@@ -1,14 +1,10 @@
 from scrapers.base_scraper import BaseScraper
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from typing import Optional, Tuple
 import logging
-from config import SITE_TIMEOUTS, SELENIUM_CONFIG
+from config import SITE_TIMEOUTS
 
 class WatsonsScraper(BaseScraper):
     def can_handle(self, url: str) -> bool:
@@ -75,33 +71,6 @@ class WatsonsScraper(BaseScraper):
                     driver.quit()
                 except:
                     pass
-
-    def _get_chrome_driver(self):
-        chrome_options = Options()
-        chrome_options.add_argument('--headless=new')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-gpu')  # GPU hatalarını önlemek için
-        chrome_options.add_argument('--window-size=1920,1080')
-        
-        # GPU ve WebGL ile ilgili ek ayarlar
-        chrome_options.add_argument('--ignore-gpu-blocklist')
-        chrome_options.add_argument('--disable-gpu-sandbox')
-        chrome_options.add_argument('--disable-software-rasterizer')
-        chrome_options.add_argument('--disable-accelerated-2d-canvas')
-        chrome_options.add_argument('--disable-accelerated-jpeg-decoding')
-        chrome_options.add_argument('--disable-accelerated-mjpeg-decode')
-        chrome_options.add_argument('--disable-accelerated-video-decode')
-        
-        # Diğer performans ayarları
-        chrome_options.add_argument('--disable-extensions')
-        chrome_options.add_argument('--disable-default-apps')
-        chrome_options.add_argument('--disable-notifications')
-        
-        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-        
-        service = Service(ChromeDriverManager().install())
-        return webdriver.Chrome(service=service, options=chrome_options)
 
     def _get_timeout(self, url: str) -> int:
         """Site bazlı timeout değerini döndür"""
