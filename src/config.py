@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 # Telegram Bot Ayarları
 TELEGRAM_API_TOKEN = '7723288845:AAG8VEessGMqrV2H78Wlzibtm9y3PV2ET2Y'
-TELEGRAM_GROUP_ID = '-4527800930'  # FiyatTakip grubu ID'si
+TELEGRAM_GROUP_ID = '-1002343478961'  # FiyatTakip grubu ID'si
 PRICE_CHECK_INTERVAL = 600  # 10 dakika (saniye cinsinden)
 
 # Veritabanı Ayarları
