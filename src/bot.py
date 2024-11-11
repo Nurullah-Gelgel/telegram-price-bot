@@ -32,47 +32,50 @@ from db import favori_urun_ekle_db, favorileri_goster_db, favori_sil_db, tum_fav
 def fiyat_guncelle(context: CallbackContext):
     """Favori ürünlerin fiyatlarını güncelle ve değişiklik varsa bildirim gönder."""
     tum_favoriler = tum_favori_urunleri_getir()
+    guncellenen_urun_sayisi = 0
+    
     for urun in tum_favoriler:
         kullanici_id, urun_id, urun_link, mevcut_fiyat = urun
         yeni_fiyat, _ = fiyat_kontrolu(urun_link)
         
         if yeni_fiyat is not None and yeni_fiyat != mevcut_fiyat:
+            guncellenen_urun_sayisi += 1
             # Sadece fiyat düştüğünde bildirim gönder
             if yeni_fiyat < mevcut_fiyat:
                 fiyat_degisimi = mevcut_fiyat - yeni_fiyat
                 indirim_yuzdesi = (fiyat_degisimi/mevcut_fiyat)*100
                 
-                # Kullanıcıya özel mesaj
+                # Mesajları kısalt ve URL'yi markdown formatında gönder
                 kullanici_mesaji = (
-                    f"🔔 **Fiyat Düşüşü Bildirimi**\n"
-                    f"🔗 **Ürün Linki**: {urun_link}\n"
-                    f"💰 **Eski Fiyat**: {mevcut_fiyat:.2f} TL\n"
-                    f"📉 **Yeni Fiyat**: {yeni_fiyat:.2f} TL\n"
-                    f"💫 **İndirim**: {fiyat_degisimi:.2f} TL (%{indirim_yuzdesi:.1f})"
+                    f"🔔 Fiyat Düşüşü\n"
+                    f"[Ürüne Git]({urun_link})\n"
+                    f"💰 Eski: {mevcut_fiyat:.2f} TL\n"
+                    f"📉 Yeni: {yeni_fiyat:.2f} TL\n"
+                    f"💫 İndirim: {fiyat_degisimi:.2f} TL (%{indirim_yuzdesi:.1f})"
                 )
                 
-                # Gruba gönderilecek mesaj
                 grup_mesaji = (
-                    f"🔔 **Yeni Fiyat Düşüşü!**\n"
-                    f"🔗 **Ürün Linki**: {urun_link}\n"
-                    f"💰 **Eski Fiyat**: {mevcut_fiyat:.2f} TL\n"
-                    f"📉 **Yeni Fiyat**: {yeni_fiyat:.2f} TL\n"
-                    f"💫 **İndirim**: {fiyat_degisimi:.2f} TL (%{indirim_yuzdesi:.1f})"
+                    f"🔔 Fiyat Düşüşü\n"
+                    f"[Ürüne Git]({urun_link})\n"
+                    f"💰 Eski: {mevcut_fiyat:.2f} TL\n"
+                    f"📉 Yeni: {yeni_fiyat:.2f} TL\n"
+                    f"💫 İndirim: {fiyat_degisimi:.2f} TL (%{indirim_yuzdesi:.1f})"
                 )
                 
                 try:
-                    # Kullanıcıya bildirim gönder
+                    # Mesaj gönderirken disable_web_page_preview ekle
                     context.bot.send_message(
                         chat_id=kullanici_id,
                         text=kullanici_mesaji,
-                        parse_mode='Markdown'
+                        parse_mode='Markdown',
+                        disable_web_page_preview=True
                     )
                     
-                    # Gruba bildirim gönder
                     context.bot.send_message(
                         chat_id=TELEGRAM_GROUP_ID,
                         text=grup_mesaji,
-                        parse_mode='Markdown'
+                        parse_mode='Markdown',
+                        disable_web_page_preview=True
                     )
                     logger.info(f"Fiyat düşüşü bildirimi gönderildi - Kullanıcı: {kullanici_id}, Ürün: {urun_link}")
                 except Exception as e:
@@ -80,6 +83,17 @@ def fiyat_guncelle(context: CallbackContext):
             
             # Fiyatı veritabanında güncelle
             favori_fiyat_guncelle_db(kullanici_id, urun_id, yeni_fiyat)
+    
+    # Güncelleme sonucunu bildir
+    if hasattr(context, 'job'):
+        return  # Otomatik güncelleme ise mesaj gönderme
+        
+    if context.bot:
+        context.bot.send_message(
+            chat_id=kullanici_id,
+            text=f"✅ Fiyat güncellemesi tamamlandı.\n📊 {guncellenen_urun_sayisi} üründe değişiklik tespit edildi.",
+            parse_mode='Markdown'
+        )
 
 def start(update: Update, context: CallbackContext):
     """Botun başlangıç mesajı"""
@@ -93,7 +107,7 @@ def help_command(update: Update, context: CallbackContext):
         "📋 **/favoriler** - Favori ürünleri göster\n"
         "📋 **/tum_favoriler** - Tüm favori ürünleri göster\n"
         "🗑️ **/favori_sil [ürün_linki]** - Ürün favorilerden sil (ürün linkini kullanarak silin)\n"
-        "🔄 **/fiyat_guncelle** - Fiyatları güncelle\n\n"
+  #      "🔄 **/fiyat_guncelle** - Fiyatları güncelle\n\n"
         "🔍 **Olası sorunlar:**\n"
         "Eğer bir ürünün fiyatı doğru şekilde alınmıyorsa, lütfen ürün linkini kontrol edin veya tekrar deneyin."
     )
@@ -172,7 +186,7 @@ def tum_favori_urunler(update: Update, context: CallbackContext):
             )
         update.message.reply_text(mesaj)
     else:
-        update.message.reply_text("🚫 Hiç favori ürün bulunamadı.")
+        update.message.reply_text(" Hiç favori ürün bulunamadı.")
 
 def favori_sil(update: Update, context: CallbackContext):
     """Favori ürünü sil"""
@@ -210,6 +224,7 @@ def main():
     dp.add_handler(CommandHandler("tum_favoriler", tum_favori_urunler))
     dp.add_handler(CommandHandler("favori_sil", favori_sil))
     dp.add_handler(CommandHandler("test_group", test_group))
+    dp.add_handler(CommandHandler("fiyat_guncelle", fiyat_guncelle))
 
     # Fiyat güncellemelerini config'den al
     updater.job_queue.run_repeating(fiyat_guncelle, interval=PRICE_CHECK_INTERVAL, first=0)
