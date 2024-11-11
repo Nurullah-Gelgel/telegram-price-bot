@@ -105,7 +105,7 @@ def help_command(update: Update, context: CallbackContext):
         "Bu botun kullanabileceğiniz komutlar:\n\n"
         "📦 **/favori_ekle [ürün_linki]** - Ürün favorilere ekle\n"
         "📋 **/favoriler** - Favori ürünleri göster\n"
-        "📋 **/tum_favoriler** - Tüm favori ürünleri göster\n"
+        #"📋 **/tum_favoriler** - Tüm favori ürünleri göster\n"
         "🗑️ **/favori_sil [ürün_linki]** - Ürün favorilerden sil (ürün linkini kullanarak silin)\n"
   #      "🔄 **/fiyat_guncelle** - Fiyatları güncelle\n\n"
         "🔍 **Olası sorunlar:**\n"
